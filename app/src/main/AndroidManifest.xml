@@ -17,7 +17,7 @@
         android:theme="@style/Theme.GoogleMapExample"
         tools:targetApi="31">
         <activity
-            android:name=".SpalshActivity"
+            android:name=".MainActivity"
             android:exported="false" />
 
         <meta-data
@@ -25,7 +25,7 @@
             android:value="${GOOGLE_MAPS_API_KEY}" />
 
         <activity
-            android:name=".MainActivity"
+            android:name=".SpalshActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

@@ -4,13 +4,14 @@ import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import com.example.googlemapexample.databinding.ActivitySpalshBinding
 import com.example.googlemapexample.util.CustomTimer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class SpalshActivity : AppCompatActivity() {
-    lateinit var binding : ActivityS
+    lateinit var binding : ActivitySpalshBinding
 
     val splashTimer : CustomTimer = CustomTimer()
     var count : Int = 0
