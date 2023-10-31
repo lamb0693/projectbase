@@ -1,4 +1,4 @@
-package com.example.googlemapexample
+package com.example.googlemapexample.DTO
 
 data class RestaurantInfoDTO(
     var name : String,

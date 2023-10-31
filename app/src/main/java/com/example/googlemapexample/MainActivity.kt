@@ -16,18 +16,24 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import android.Manifest
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
+import com.example.googlemapexample.DTO.PointD
+import com.example.googlemapexample.DTO.RestaurantInfoDTO
+import com.example.googlemapexample.viewmodel.RestaurantInfoViewModel
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.Marker
 
 
 class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
     private lateinit var gMap: GoogleMap
+    private var mapReady : Boolean = false
+
     private lateinit var bindMain: ActivityMainBinding
 
     lateinit var fusedLocationClient : FusedLocationProviderClient
 
-    val curLocation : PointD = PointD()
-    lateinit var restaurantMap : MutableMap<String, RestaurantInfoDTO>
+    lateinit var viewModel : RestaurantInfoViewModel
 
     val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -57,18 +63,12 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         //End of request for permission
     }
 
-    private fun getLastKnownLocation() {
+    private fun setLastKnownLocation() {
         if(ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.ACCESS_FINE_LOCATION)  === PackageManager.PERMISSION_GRANTED){
             fusedLocationClient.lastLocation
                 .addOnSuccessListener(this) { location ->
                     if (location != null) {
-                        curLocation.x = location.latitude
-                        curLocation.y = location.longitude
-                        Toast.makeText(
-                            this,
-                            "Latitude: ${curLocation.x}, Longitude: ${curLocation.y}",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        viewModel.setCurrentLocation( PointD(location.latitude, location.longitude) )
                     } else {
                         Toast.makeText(this, "Location not available", Toast.LENGTH_SHORT).show()
                     }
@@ -77,23 +77,41 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
     }
 
+    fun initializeViewModel() : Unit{
+        viewModel = ViewModelProvider(this)[RestaurantInfoViewModel::class.java]
+
+        viewModel.getRestaurantList().observe(this, Observer{
+            Log.i("observer", "RestaurantMap")
+            viewModel.getRestaurantList().value?.let{
+                for((key,rest) in it){
+                    Log.i("add marker", rest.latitude.toString() + rest.longitude.toString())
+                    Log.i("gamap", gMap.toString())
+                    gMap?.addMarker(MarkerOptions().position(LatLng(rest.latitude+0.02, rest.longitude)).title(rest.name))
+                }
+            }
+        })
+
+        viewModel.getCurLocation().observe(this, Observer{
+            Log.i("observer", "CurLocation")
+            viewModel.getCurLocation().value?.let{
+                gMap?.addMarker(MarkerOptions().position(LatLng(it.latitude, it.longitude)).title("나"))
+                gMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(it.latitude, it.longitude), 15f))
+            }
+
+        })
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         checkPermission()
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
-        restaurantMap = mutableMapOf<String, RestaurantInfoDTO>()
-        restaurantMap.put("AAA", RestaurantInfoDTO("AAA", 35.88, 128.59))
-        restaurantMap.put("BBB", RestaurantInfoDTO("BBB", 35.89, 128.58))
-        restaurantMap.put("CCC", RestaurantInfoDTO("CCC", 35.86, 128.605))
-
         bindMain = ActivityMainBinding.inflate(layoutInflater)
         setContentView(bindMain.root)
 
-//        val mapFragment: SupportMapFragment? =
-//            bindMain.childFragmentManager
-//                .findFragmentById(fragmentId) as SupportMapFragment
+        initializeViewModel()
+
 
         val mapFragment = supportFragmentManager
             .findFragmentById(R.id.map) as SupportMapFragment
@@ -101,48 +119,21 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
 
         bindMain.buttonCurrent.setOnClickListener {
-            getLastKnownLocation()
-            val latLng = LatLng(curLocation.x, curLocation.y)
-            gMap.addMarker(MarkerOptions().position(latLng).title("here"))
-            gMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15f))
+            setLastKnownLocation()
         }
     }
 
-    fun displayRestaurantList(){
-        for((key,rest) in restaurantMap){
-            gMap.addMarker(MarkerOptions().position(LatLng(rest.latitude, rest.longitude)).title(rest.name))
-        }
-    }
-
-    override fun onMapReady(googleMap: GoogleMap) {
-
+     override fun onMapReady(googleMap: GoogleMap) {
         gMap = googleMap
-
+        mapReady = true
         gMap.setOnMarkerClickListener(this)
-
-        getLastKnownLocation()
-        Log.i("current Location", curLocation.toString())
-        // 초기 위치 설정 및 마커 표시
-        displayRestaurantList()
-
-        //val latLng = LatLng(curLocation.x, curLocation.y)
-        //gMap.addMarker(MarkerOptions().position(latLng).title("here"))
-        //gMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15f))
+        setLastKnownLocation()
+        viewModel.getRestaurantListFromServer()
     }
 
-    inner class PointD {
-        var x : Double = 0.0
-        var y : Double = 0.0
-        override fun toString(): String {
-            return "PointD(x=$x, y=$y)"
-        }
-    }
-
-    override fun onMarkerClick(p0: Marker): Boolean {
+     override fun onMarkerClick(p0: Marker): Boolean {
         Log.i("onMarkerClick", p0.title.toString())
-        bindMain.textView.text = restaurantMap.get(p0.title.toString()).toString()
+        bindMain.textView.text = viewModel.getRestaurantList().value?.get(p0.title.toString()).toString()
         return true
     }
-
-
 }
