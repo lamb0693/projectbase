@@ -1,11 +1,14 @@
 package com.example.googlemapexample.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.googlemapexample.DTO.PointD
 import com.example.googlemapexample.DTO.RestaurantInfoDTO
+import com.example.googlemapexample.Db
 import com.example.googlemapexample.MainActivity
+import java.lang.Exception
 
 class RestaurantInfoViewModel : ViewModel(){
     // 수정은 외부에서 직접하지는 못하게, viewModel을 통해서 수정 가능
@@ -31,11 +34,31 @@ class RestaurantInfoViewModel : ViewModel(){
     fun getRestaurantListFromServer(){
         // observer가 호출되려면 value라는 자체가 변해야 하므로 새로 만들어 대입
         val newList = mutableMapOf<String, RestaurantInfoDTO>()
-        // AJAX 이용 RestaureantInfoList를 받아온 후 setting
-        // test용으로 하나만 넣어서 새 list를 만듬
-        newList.put("BusanIT", RestaurantInfoDTO("BusanIT", 35.22,  128.32))
-        newList.put("BusanRest", RestaurantInfoDTO("BusanRest", 35.25, 128.35))
-        restaurantMap.value = newList
+
+        var restInfo : RestaurantInfoDTO
+        Db.getInstance().collection("restauran_Info")
+            .get()
+            .addOnSuccessListener { restaurantInfos ->
+                try{
+                    for(rest in restaurantInfos){
+                        restInfo = RestaurantInfoDTO(
+                            rest.data["name"].toString(),
+                            rest.data["latitude"] as Double,
+                            rest.data["longitude"] as Double
+                        )
+                        Log.i("restInfo", "lsit $restInfo")
+                        newList[rest.data["name"].toString()] = restInfo
+                    }
+                } catch(exc : Exception){
+                    Log.e("restInfo", "exc ${exc.cause}")
+                }
+
+                Log.i("getList", "success : $newList")
+                restaurantMap.value = newList
+            }
+            .addOnFailureListener{
+                exc -> Log.i("getList", exc.cause.toString())
+            }
     }
 
     fun setRestaurantList( newMap : MutableMap<String, RestaurantInfoDTO>){

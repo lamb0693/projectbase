@@ -81,7 +81,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         viewModel = ViewModelProvider(this)[RestaurantInfoViewModel::class.java]
 
         viewModel.getRestaurantList().observe(this, Observer{
-            Log.i("observer", "RestaurantMap")
+            Log.i("observer", "RestaurantMap ${viewModel.getRestaurantList().value}")
             viewModel.getRestaurantList().value?.let{
                 for((key,rest) in it){
                     Log.i("add marker", rest.latitude.toString() + rest.longitude.toString())
@@ -99,6 +99,13 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             }
 
         })
+    }
+
+    fun saveRestaurantInfoTest(){
+        Db.getInstance().collection("restauran_Info")
+            .add(RestaurantInfoDTO("BusanRest", 35.25, 128.35))
+            .addOnSuccessListener { ref -> Log.i("restInfo save", "success") }
+            .addOnFailureListener { ref -> Log.i("restInfo save", ref.cause.toString() )}
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -120,6 +127,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
         bindMain.buttonCurrent.setOnClickListener {
             setLastKnownLocation()
+        }
+
+        bindMain.buttonTest.setOnClickListener{
+            saveRestaurantInfoTest()
         }
     }
 
