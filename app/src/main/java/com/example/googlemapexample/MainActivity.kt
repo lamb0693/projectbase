@@ -20,9 +20,15 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import com.example.googlemapexample.DTO.PointD
 import com.example.googlemapexample.DTO.RestaurantInfoDTO
+import com.example.googlemapexample.util.ApiObject
+import com.example.googlemapexample.util.FCMMessage
+import com.example.googlemapexample.util.FCMNotification
+import com.example.googlemapexample.util.RetrofitService
 import com.example.googlemapexample.viewmodel.RestaurantInfoViewModel
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.Marker
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
 
 class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
@@ -130,7 +136,17 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         }
 
         bindMain.buttonTest.setOnClickListener{
-            saveRestaurantInfoTest()
+            var data  = mutableMapOf<String, String>()
+            data.put("Hello", "world")
+
+            GlobalScope.launch {
+                var response = ApiObject.getApiService().sendMessage( "KMW9IKV6eNcv4jJdNS8idCwiJFlZfOWrKqNTSgH3fF0",
+                    FCMMessage("344891437614", FCMNotification("title", "body"), data.toMap())
+                )
+            }
+
+
+
         }
     }
 
